@@ -1,3 +1,6 @@
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.Calendar;
 
 public class ResponseDb {
@@ -8,13 +11,37 @@ public class ResponseDb {
     private static final String CONNECTION_URL = "jdbc:sqlite:goldilocks.db";
 
 
+    private Connection connection;
+
+
     public ResponseDb() {
 
         // Connect to the DB
+        try {
+            connection = DriverManager.getConnection(CONNECTION_URL);
 
-        // If the events table doesn't already exist, make it
+            // If the events table doesn't already exist, make it
+            connection.createStatement().execute(
+                    "create table if not exists Events ( " +
+                            "Name text not null unique, " +
+                            "OrganizerPhone text not null, " +
+                            "Attendees integer not null, " +
+                            ");");
 
-        // If the responses table doesn't already exist, make it
+            // If the responses table doesn't already exist, make it
+            connection.createStatement().execute(
+                    "create table if not exists Responses ( " +
+                            "Event integer not null, " +
+                            "AttendeePhone text not null, " +
+                            "Vote integer not null, " +
+                            "Timestamp text not null, " +
+                            "foreign key (Event) references Events (rowid) " +
+                            ");");
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            throw new Error("Could not connect to SQLite");
+        }
     }
 
 
