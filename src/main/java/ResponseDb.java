@@ -1,7 +1,10 @@
+import java.security.InvalidParameterException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Calendar;
+import java.util.Objects;
 
 public class ResponseDb {
 
@@ -48,14 +51,27 @@ public class ResponseDb {
     public boolean addEvent(String name, String organizerPhone, int attendees) {
 
         // Validate not null and greater than zero
+        Objects.requireNonNull(name);
+        Objects.requireNonNull(organizerPhone);
+        if (attendees <= 0) {
+            throw new IllegalArgumentException("Attendees must be positive");
+        }
 
         // Insert a new row into events table
+        try {
+            PreparedStatement stmt = connection.prepareStatement("insert or fail into Events (Name, OrganizerPhone, Attendees) values (?, ?, ?);");
+            stmt.setString(1, name);
+            stmt.setString(2, organizerPhone);
+            stmt.setInt(3, attendees);
+            stmt.execute();
 
-        // If conflict on name, then return false
+        } catch (SQLException ex) {
+            // If conflict on name, then return false
+            return false;
+        }
 
         // If successful, return true
-
-        return false; // TODO
+        return true;
     }
 
 
