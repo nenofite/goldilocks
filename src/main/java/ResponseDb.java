@@ -121,7 +121,7 @@ public class ResponseDb {
         try {
             // Find which event this phone number is attending
             PreparedStatement stmt = connection.prepareStatement(
-                    "select (Event) from Attendees " +
+                    "select Event from Attendees " +
                             "where AttendeePhone = ? ");
             stmt.setString(1, phone);
             ResultSet results = stmt.executeQuery();
@@ -153,6 +153,33 @@ public class ResponseDb {
     }
 
 
+    public String getOrganizersEvent(String organizerPhone) {
+
+        // Validate not null
+        Objects.requireNonNull(organizerPhone);
+
+        // Query the database
+        try {
+            PreparedStatement eventStmt = connection.prepareStatement(
+                    "select Name from Events where " +
+                            "OrganizerPhone = ? ");
+            eventStmt.setString(1, organizerPhone);
+            ResultSet results = eventStmt.executeQuery();
+            if (results.next()) {
+                return results.getString(1);
+
+            } else {
+                // If the organizer has no event, return null
+                return null;
+            }
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            return null;
+        }
+    }
+
+
     public VoteBreakdown getRecentResponses(String eventName, Calendar sinceWhen) {
 
         // Validate not null
@@ -162,7 +189,7 @@ public class ResponseDb {
         try {
             // Query the counts of responses since the given time in the database
             PreparedStatement responsesStmt = connection.prepareStatement(
-                    "select (AttendeePhone, Vote) from Responses where " +
+                    "select AttendeePhone, Vote from Responses where " +
                             "Event = ? and " +
                             "Timestamp > ? " +
                             "order by Timestamp desc");
@@ -201,7 +228,7 @@ public class ResponseDb {
 
             // Get the number of attendees
             PreparedStatement attendeesStmt = connection.prepareStatement(
-                    "select (Attendees) from Events where " +
+                    "select Attendees from Events where " +
                             "Name = ?");
             attendeesStmt.setString(1, eventName);
             ResultSet attendees = attendeesStmt.executeQuery();
