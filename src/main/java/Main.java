@@ -16,10 +16,9 @@ import static spark.Spark.post;
 
 public class Main {
 
-    // TODO switch to env var
-    public static final String ACCOUNT_SID = "AC16bbbd6c90c0d42ba29e89bd547fa2ba";
-    public static final String AUTH_TOKEN = "364b03ef60906a434112516bd081217d";
-    public static final String TWILIO_SMS = "415-966-2769";
+    public static final String ACCOUNT_SID = System.getenv("TWILIO_ACCOUNT_SID");
+    public static final String AUTH_TOKEN = System.getenv("TWILIO_AUTH_TOKEN");
+    public static final String TWILIO_SMS = System.getenv("TWILIO_SMS");
 
 
     private static final Pattern EVENT_SETUP_PATTERN = Pattern.compile("(.+?)(\\d+) ppl$");
