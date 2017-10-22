@@ -69,15 +69,11 @@ public class Main {
 
                     default:
                     case NONE:
-                        if (body.isEmpty() || "start".equals(body)) {
-                            message = "\uE051 Welcome to Goldilocks, the crowdsourced thermostat anyone can use." +
-                                    " To start an event text your event name and number of attendees. \uE002\n" +
-                                    "(Example: SD Hacks 100 ppl)";
-                            nextState = ConvoState.UC1_1;
+                        if (body.startsWith("join ")) {
+                            String event = body.substring("join ".length());
 
-                        } else {
                             // Try to find this event and add this number
-                            boolean success = db.addAttendeeToEvent(fromPhone, body);
+                            boolean success = db.addAttendeeToEvent(fromPhone, event);
                             if (success) {
                                 message = String.format(
                                         "You are successfully registered at %s! Text “too hot”, “too cold”, or “just right” to %s to vote.",
@@ -88,35 +84,46 @@ public class Main {
                                 message = "Sorry, we don’t recognize that event name. Please try again.";
                                 nextState = ConvoState.NONE;
                             }
-                        }
-                        break;
 
-                    case UC1_1:
+                        } else if (body.startsWith("start ")) {
+                            Matcher matcher = EVENT_SETUP_PATTERN.matcher(body.substring("start ".length()));
 
-                        Matcher matcher = EVENT_SETUP_PATTERN.matcher(body);
+                            if (matcher.matches()) {
+                                String eventName = matcher.group(1).trim();
+                                int attendees = Integer.parseInt(matcher.group(2));
 
-                        if (matcher.matches()) {
-                            String eventName = matcher.group(1).trim();
-                            int attendees = Integer.parseInt(matcher.group(2));
+                                if (attendees <= 0) {
+                                    message = "Please enter a positive number of people";
+                                    break;
+                                }
 
-                            boolean success = db.addEvent(eventName, fromPhone, attendees);
+                                boolean success = db.addEvent(eventName, fromPhone, attendees);
 
-                            if (success) {
-                                message = String.format(
-                                        "%s has been set up! Have your attendees text “%s” to the number %s to vote their thermostat preference.",
-                                        eventName, eventName, TWILIO_SMS);
-                                nextState = ConvoState.UC1_2;
+                                if (success) {
+                                    message = String.format(
+                                            "%s has been set up! Have your attendees text “join %s” to the number %s to vote their thermostat preference.\n" +
+                                                    "Text “update me” before adjusting the temperature.\n" +
+                                                    "Text “sleep” when the event is over",
+                                            eventName, eventName, TWILIO_SMS);
+                                    nextState = ConvoState.UC1_2;
+
+                                } else {
+                                    message = String.format(
+                                            "Sorry! An event called %s already exists. Please try a different name.",
+                                            eventName);
+                                    nextState = ConvoState.NONE;
+                                }
 
                             } else {
-                                message = String.format(
-                                        "Sorry! An event called %s already exists. Please try a different name.",
-                                        eventName);
-                                nextState = ConvoState.UC1_1;
+                                message = "Sorry, we don’t recognize your input. Please try again. (Here's another example: start bobsHouseParty 50 ppl)";
+                                nextState = ConvoState.NONE;
                             }
 
                         } else {
-                            message = "Sorry, we don’t recognize your input. Please try again. (Here's another example: bobsHouseParty 50 ppl)";
-                            nextState = ConvoState.UC1_1;
+                            message = "\uE051 Welcome to Goldilocks, the crowdsourced thermostat anyone can use." +
+                                    " To start an event text your event name and number of attendees. \uE002\n" +
+                                    "(Example: start SD Hacks 100 ppl)";
+                            nextState = ConvoState.NONE;
                         }
                         break;
 
@@ -144,7 +151,8 @@ public class Main {
                                 }
                                 break;
 
-                            case "stop":
+                            case "end event":
+                            case "sleep":
                                 message = "Are you sure you would like to stop using Goldilocks? (Y/N)";
                                 nextState = ConvoState.UC5_1;
                                 break;
@@ -185,7 +193,7 @@ public class Main {
                     case UC5_1:
                         if ("y".equals(body) || "yes".equals(body)) {
                             message = "Your service has been terminated. Thank you for using Goldilocks! \uD83D\uDECF\uE13C";
-                            // TODO end event
+                            db.endEvent(db.getOrganizersEvent(fromPhone));
                             nextState = ConvoState.NONE;
 
                         } else {

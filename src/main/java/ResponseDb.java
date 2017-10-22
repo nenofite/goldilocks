@@ -180,6 +180,34 @@ public class ResponseDb {
     }
 
 
+    public void endEvent(String eventName) {
+
+        // Validate not null
+        Objects.requireNonNull(eventName);
+
+        // Delete from Events, Attendees, and Responses
+        try {
+            PreparedStatement responsesStmt = connection.prepareStatement(
+                    "delete from Responses where Event = ?");
+            responsesStmt.setString(1, eventName);
+            responsesStmt.execute();
+
+            PreparedStatement attendeeStmt = connection.prepareStatement(
+                    "delete from Attendees where Event = ?");
+            attendeeStmt.setString(1, eventName);
+            attendeeStmt.execute();
+
+            PreparedStatement eventStmt = connection.prepareStatement(
+                    "delete from Events where Name = ?");
+            eventStmt.setString(1, eventName);
+            eventStmt.execute();
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+
     public VoteBreakdown getRecentResponses(String eventName, Calendar sinceWhen) {
 
         // Validate not null
@@ -240,7 +268,7 @@ public class ResponseDb {
             int totalVotes = tooColds + tooHots + justRights;
 
             // Divide the values and set into a new ResponseBreakdown object
-            return new VoteBreakdown(attendeesCount, totalVotes, tooColds, tooHots, justRights);
+            return new VoteBreakdown(attendeesCount, totalVotes, (double) tooColds / attendeesCount, (double) tooHots / attendeesCount, (double) justRights / attendeesCount);
 
         } catch (SQLException ex) {
             ex.printStackTrace();
