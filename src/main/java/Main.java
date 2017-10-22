@@ -33,7 +33,7 @@ public class Main {
             if (body == null) {
                 body = "";
             }
-            body = body.trim().toLowerCase();
+            body = body.trim().toLowerCase().replaceAll("\\s+", " ");
 
             // Get previous state
             ConvoState convoState = ConvoState.NONE;
