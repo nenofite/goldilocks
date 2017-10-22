@@ -77,7 +77,7 @@ public class Main {
                             if (success) {
                                 message = String.format(
                                         "You are successfully registered at %s! Text “too hot”, “too cold”, or “just right” to %s to vote.",
-                                        body, TWILIO_SMS);
+                                        event, TWILIO_SMS);
                                 nextState = ConvoState.UC2_1;
 
                             } else {
