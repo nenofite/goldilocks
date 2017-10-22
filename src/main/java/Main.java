@@ -48,11 +48,66 @@ public class Main {
             switch (convoState) {
                 default:
                 case NONE:
-                    message = "Hello welcome blah blah";
-                    nextState = ConvoState.UC1_2;
+                    message = "Welcome to Goldilocks, the crowdsourced thermostat anyone can use." +
+                            " To start an event text your event name and number of attendees. " +
+                            "(Example: sdHacks 100 ppl)";
+                    nextState = ConvoState.UC1_3;
                     break;
 
-                case UC1_1:
+                case UC1_2:
+                    message ="Sorry, we don’t recognize your input. Please try again. " +
+                            "(Here's another example: bobsHouseParty 50 ppl)";
+                    nextState = ConvoState.UC1_3;
+                    break;
+
+                case UC1_3:
+                    message = "sdHacks has been set up! Have your attendees text “sdHacks” to the number ### " +
+                            "to vote their thermostat preference.";
+                    break;
+
+                case UC2_1:
+                    message = "You are successfully registered at sdHacks!  Text “too hot”, “too cold”, or “just right”" +
+                            " to ### to vote on the thermostat preference of your event.";
+                    nextState = ConvoState.UC3_1;
+                    break;
+
+                case UC2_2:
+                    message = "Sorry, we don’t recognize that event name. Please try again.";
+                    nextState = ConvoState.UC3_1;
+                    break;
+
+                case UC3_1:
+                    message = "Your vote has been submitted! Text “too hot”, “too cold”, or “just right”," +
+                            " to change your vote anytime.";
+                    break;
+
+                case UC3_2:
+                    message = "Sorry, we don’t recognize your vote. Please try again.";
+                    nextState = ConvoState.UC3_1;
+                    break;
+
+                case UC4:
+                    message = "##% of sdHack attendees say the temperature is too hot. \n" +
+                            "##% of sdHack attendees say the temperature is too cold.\n" +
+                            "##% of sdHack attendees say the temperature is just right.\n" +
+                            "To end the Goldilocks service, text “stop” at anytime.";
+                    nextState = ;
+                    break;
+
+                case UC5_1:
+                    message = "Are you sure you would like to stop using Goldilocks? (Y/N)";
+                    break;
+
+                case UC5_2:
+                    message = "Your service has been terminated. Thank you for using Goldilocks!";
+                    break;
+
+                case UC5_3:
+                    message = "Your service is resumed.";
+                    break;
+
+                case UC5_4:
+                    message = "Sorry, we don’t recognize that response. Please try again.";
                     break;
             }
 
