@@ -19,7 +19,7 @@ public class Main {
     // TODO switch to env var
     public static final String ACCOUNT_SID = "AC16bbbd6c90c0d42ba29e89bd547fa2ba";
     public static final String AUTH_TOKEN = "364b03ef60906a434112516bd081217d";
-    public static final String TWILIO_SMS = System.getenv("TWILIO_SMS");
+    public static final String TWILIO_SMS = "415-966-2769";
 
 
     private static final Pattern EVENT_SETUP_PATTERN = Pattern.compile("(.+?)(\\d+) ppl$");
@@ -70,8 +70,8 @@ public class Main {
                     default:
                     case NONE:
                         if (body.isEmpty() || "start".equals(body)) {
-                            message = "Welcome to Goldilocks, the crowdsourced thermostat anyone can use." +
-                                    " To start an event text your event name and number of attendees. " +
+                            message = "\uE051 Welcome to Goldilocks, the crowdsourced thermostat anyone can use." +
+                                    " To start an event text your event name and number of attendees. \uE002\n" +
                                     "(Example: SD Hacks 100 ppl)";
                             nextState = ConvoState.UC1_1;
 
@@ -131,9 +131,9 @@ public class Main {
                                 if (eventName != null) {
                                     VoteBreakdown breakdown = db.getRecentResponses(db.getOrganizersEvent(fromPhone), pastHour);
                                     message = String.format(
-                                            "%d%% are too hot.\n" +
-                                                    "%d%% are too cold.\n" +
-                                                    "%d%% feel just right.",
+                                            "\uE11D %d%% are too hot\n" +
+                                                    "❄ %d%% are too cold\n" +
+                                                    "\uE420 %d%% feel just right",
                                             (int) (breakdown.getTooHot() * 100),
                                             (int) (breakdown.getTooCold() * 100),
                                             (int) (breakdown.getJustRight() * 100));
@@ -184,7 +184,7 @@ public class Main {
 
                     case UC5_1:
                         if ("y".equals(body) || "yes".equals(body)) {
-                            message = "Your service has been terminated. Thank you for using Goldilocks!";
+                            message = "Your service has been terminated. Thank you for using Goldilocks! \uD83D\uDECF\uE13C";
                             // TODO end event
                             nextState = ConvoState.NONE;
 
