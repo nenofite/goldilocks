@@ -1,7 +1,10 @@
+import org.sqlite.JDBC;
+
 import java.sql.*;
 import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.logging.Logger;
 
 public class ResponseDb {
 
@@ -18,15 +21,20 @@ public class ResponseDb {
 
         // Connect to the DB
         try {
+            Class.forName("org.sqlite.JDBC");
             connection = DriverManager.getConnection(CONNECTION_URL);
+
+            // Enable foreign keys (disabled by default)
+            connection.createStatement().execute(
+                    "pragma foreign_keys = on");
 
             // If the events table doesn't already exist, make it
             connection.createStatement().execute(
                     "create table if not exists Events ( " +
                             "Name text not null unique, " +
                             "OrganizerPhone text not null, " +
-                            "Attendees integer not null, " +
-                            ");");
+                            "Attendees integer not null " +
+                            ")");
 
             // If the responses table doesn't already exist, make it
             connection.createStatement().execute(
@@ -36,7 +44,7 @@ public class ResponseDb {
                             "Vote integer not null, " +
                             "Timestamp text not null, " +
                             "foreign key (Event) references Events (Name) " +
-                            ");");
+                            ")");
 
             // If the attendees table doesn't already exist, make it
             connection.createStatement().execute(
@@ -44,11 +52,10 @@ public class ResponseDb {
                             "AttendeePhone text not null unique, " +
                             "Event text not null, " +
                             "foreign key (Event) references Events (Name) " +
-                            ");");
+                            ")");
 
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-            throw new Error("Could not connect to SQLite");
+        } catch (SQLException | ClassNotFoundException ex) {
+            throw new Error("Could not connect to SQLite", ex);
         }
     }
 
@@ -71,6 +78,7 @@ public class ResponseDb {
             stmt.execute();
 
         } catch (SQLException ex) {
+            ex.printStackTrace();
             // If conflict on name, then return false
             return false;
         }
@@ -88,12 +96,13 @@ public class ResponseDb {
 
         // Insert or replace a row
         try {
-            PreparedStatement stmt = connection.prepareStatement("insert or replace into Attendees (AttendeePhone, Event) values (?, ?, ?);");
+            PreparedStatement stmt = connection.prepareStatement("insert or replace into Attendees (AttendeePhone, Event) values (?, ?);");
             stmt.setString(1, attendeePhone);
             stmt.setString(2, eventName);
             stmt.execute();
 
         } catch (SQLException ex) {
+            ex.printStackTrace();
             // If the event doesn't exist, return false
             return false;
         }
@@ -138,6 +147,7 @@ public class ResponseDb {
             return true;
 
         } catch (SQLException ex) {
+            ex.printStackTrace();
             return false;
         }
     }
@@ -206,6 +216,7 @@ public class ResponseDb {
             return new VoteBreakdown(attendeesCount, totalVotes, tooColds, tooHots, justRights);
 
         } catch (SQLException ex) {
+            ex.printStackTrace();
             return null;
         }
     }
