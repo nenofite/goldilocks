@@ -7,6 +7,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static spark.Spark.post;
 
@@ -18,6 +20,9 @@ public class Main {
     public static final String TWILIO_SMS = System.getenv("TWILIO_SMS");
 
 
+    private static final Pattern EVENT_SETUP_PATTERN = Pattern.compile("(.+?)(\\d+) ppl$");
+
+
     public static void main(String[] args) {
         new Main().run();
     }
@@ -27,13 +32,19 @@ public class Main {
 
         Twilio.init(ACCOUNT_SID, AUTH_TOKEN);
 
+        ResponseDb db = new ResponseDb();
+
         post("/receive-sms", (request, response) -> {
 
-            String body = splitQuery(request.body()).get("Body");
+            Map<String, String> bodyParams = splitQuery(request.body());
+
+            String body = bodyParams.get("Body");
             if (body == null) {
                 body = "";
             }
             body = body.trim().toLowerCase().replaceAll("\\s+", " ");
+
+            String fromPhone = bodyParams.get("From");
 
             // Get previous state
             ConvoState convoState = ConvoState.NONE;
@@ -46,12 +57,42 @@ public class Main {
             ConvoState nextState = ConvoState.NONE;
 
             switch (convoState) {
+
                 default:
                 case NONE:
                     message = "Welcome to Goldilocks, the crowdsourced thermostat anyone can use." +
                             " To start an event text your event name and number of attendees. " +
-                            "(Example: sdHacks 100 ppl)";
-                    nextState = ConvoState.UC1_3;
+                            "(Example: SD Hacks 100 ppl)";
+                    nextState = ConvoState.UC1_1;
+                    break;
+
+                case UC1_1:
+
+                    Matcher matcher = EVENT_SETUP_PATTERN.matcher(body);
+
+                    if (matcher.matches()) {
+                        String eventName = matcher.group(1).trim();
+                        int attendees = Integer.parseInt(matcher.group(2));
+
+                        boolean success = db.addEvent(eventName, fromPhone, attendees);
+
+                        if (success) {
+                            message = String.format(
+                                    "%s has been set up! Have your attendees text “%s” to the number %s to vote their thermostat preference.",
+                                    eventName, eventName, TWILIO_SMS);
+                            nextState = ConvoState.NONE;
+
+                        } else {
+                            message = String.format(
+                                    "Sorry! An event called %s already exists. Please try a different name.",
+                                    eventName);
+                            nextState = ConvoState.UC1_1;
+                        }
+
+                    } else {
+                        message = "Sorry, we don’t recognize your input. Please try again. (Here's another example: bobsHouseParty 50 ppl)";
+                        nextState = ConvoState.UC1_1;
+                    }
                     break;
 
                 case UC1_2:
@@ -91,7 +132,6 @@ public class Main {
                             "##% of sdHack attendees say the temperature is too cold.\n" +
                             "##% of sdHack attendees say the temperature is just right.\n" +
                             "To end the Goldilocks service, text “stop” at anytime.";
-                    nextState = ;
                     break;
 
                 case UC5_1:
