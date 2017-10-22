@@ -1,5 +1,3 @@
-package com.twilio;
-
 import static spark.Spark.post;
 
 import com.twilio.twiml.Body;
@@ -7,30 +5,32 @@ import com.twilio.twiml.Message;
 import com.twilio.twiml.MessagingResponse;
 
 import com.twilio.Twilio;
-import com.twilio.rest.api.v2010.account.Message;
 import com.twilio.type.PhoneNumber;
 
-public class SendSms{
+import java.util.HashMap;
+
+public class Main {
 
     public static final String ACCOUNT_SID = "AC16bbbd6c90c0d42ba29e89bd547fa2ba";
     public static final String AUTH_TOKEN = "364b03ef60906a434112516bd081217d";
     public static final String TWILIO_SMS = System.getenv("TWILIO_SMS");
-    public ConvoState convoState;
 
-    public static void convoFlow(){
+
+    public String convoFlow(ConvoState convoState) {
+
         switch( convoState ) {
             case UC1_1:
-                post("/receive-sms", (req, res) -> {
-                    Message sms = new Message.Builder()
-                            .body(new Body("Welcome to Goldilocks, the crowdsourced thermostat anyone can use. " +
-                                    "To start an event text your event name and number of attendees " +
-                                    "(Example: sdHacks 100 ppl)"))
-                            .build();
-                    MessagingResponse twiml = new MessagingResponse.Builder()
-                            .message(sms)
-                            .build()
-                });
-                break;
+                Message sms = new Message.Builder()
+                        .body(new Body("Welcome to Goldilocks, the crowdsourced thermostat anyone can use. " +
+                                "To start an event text your event name and number of attendees " +
+                                "(Example: sdHacks 100 ppl)"))
+                        .build();
+                MessagingResponse twiml = new MessagingResponse.Builder()
+                        .message(sms)
+                        .build();
+
+                return twiml.toXml();
+
             case UC1_2:
                 post("/receive-sms", (req, res) -> {
                     Message sms = new Message.Builder()
@@ -39,7 +39,7 @@ public class SendSms{
                             .build();
                     MessagingResponse twiml = new MessagingResponse.Builder()
                             .message(sms)
-                            .build()
+                            .build();
                 });
                 break;
             case UC1_3:
@@ -152,15 +152,27 @@ public class SendSms{
         }
     }
 
-    public static void main(String[] args){
-        Twilio.init(ACCOUNT_SID, AUTH_TOKEN);
+    public static void main(String[] args) {
+        new Main().run();
+    }
 
-        //the number the system is receiving messages from
-        String fromNumber = request.getParameter("From");
+    public void run() {
+
+        Twilio.init(ACCOUNT_SID, AUTH_TOKEN);
 
         //HashMap to keep track of the state each attendee is in
         //first String = attendee's number(fromNumber);  second String = attendee's state in conversation
         HashMap<String, ConvoState> attendeeState = new HashMap<String, ConvoState>();
+
+        post("/receive-sms", (request, res) -> {
+
+            //the number the system is receiving messages from
+            String fromNumber = request.getParameter("From");
+
+            ConvoState convoState = attendeeState.get(fromNumber);
+
+            return convoFlow(convoState);
+        });
 
         //if new attendee, create a new element and insert into HashMap
         if (attendeeState.containsKey(fromNumber) == false){
@@ -171,13 +183,13 @@ public class SendSms{
         else if (attendeeState.containsKey(fromNumber) == true) {
             //conversation - switch statement
         }
-        Message message = Message.creator(
+        Message message = new Message.Builder()
                 new PhoneNumber(System.getenv("MY_PHONE_NUMBER")),
                 new PhoneNumber("+14159662769"),
                 "Welcome to Goldilocks, the crowdsourced thermostat anyone can use. If you would like to organize an " +
                         "event, please text your event name, an estimate amount of people at your event, and how you want to be notified of your" +
-                        "attendees responses. Thank you!";
-        ).create();
+                        "attendees responses. Thank you!"
+        ).build();
 
 
     }
