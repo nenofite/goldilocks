@@ -1,5 +1,6 @@
 import java.sql.*;
 import java.util.Calendar;
+import java.util.HashSet;
 import java.util.Objects;
 
 public class ResponseDb {
@@ -142,16 +143,70 @@ public class ResponseDb {
     }
 
 
-    public VoteBreakdown getRecentResponses(Calendar sinceWhen) {
+    public VoteBreakdown getRecentResponses(String eventName, Calendar sinceWhen) {
 
         // Validate not null
+        Objects.requireNonNull(eventName);
+        Objects.requireNonNull(sinceWhen);
 
-        // Query the counts of responses since the given time in the database
+        try {
+            // Query the counts of responses since the given time in the database
+            PreparedStatement responsesStmt = connection.prepareStatement(
+                    "select (AttendeePhone, Vote) from Responses where " +
+                            "Event = ? and " +
+                            "Timestamp > ? " +
+                            "order by Timestamp desc");
+            responsesStmt.setString(1, eventName);
+            responsesStmt.setString(2, sinceWhen.toInstant().toString());
 
-        // Get the number of attendees
+            // Get a list of all votes
+            ResultSet votes = responsesStmt.executeQuery();
 
-        // Divide the values and set into a new ResponseBreakdown object
+            // Tally up the votes, ignoring multiple votes from the same phone
+            int tooColds = 0;
+            int justRights = 0;
+            int tooHots = 0;
 
-        return null; // TODO
+            HashSet<String> alreadyVoted = new HashSet<>();
+            while (votes.next()) {
+
+                String phone = votes.getString(1);
+                AttendeeVote vote = AttendeeVote.valueOf(votes.getString(2));
+
+                if (!alreadyVoted.contains(phone)) {
+                    alreadyVoted.add(phone);
+                    switch (vote) {
+                        case TOO_COLD:
+                            ++tooColds;
+                            break;
+                        case JUST_RIGHT:
+                            ++justRights;
+                            break;
+                        case TOO_HOT:
+                            ++tooHots;
+                            break;
+                    }
+                }
+            }
+
+            // Get the number of attendees
+            PreparedStatement attendeesStmt = connection.prepareStatement(
+                    "select (Attendees) from Events where " +
+                            "Name = ?");
+            attendeesStmt.setString(1, eventName);
+            ResultSet attendees = attendeesStmt.executeQuery();
+            if (!attendees.next()) {
+                return null;
+            }
+            int attendeesCount = attendees.getInt(1);
+
+            int totalVotes = tooColds + tooHots + justRights;
+
+            // Divide the values and set into a new ResponseBreakdown object
+            return new VoteBreakdown(attendeesCount, totalVotes, tooColds, tooHots, justRights);
+
+        } catch (SQLException ex) {
+            return null;
+        }
     }
 }
